@@ -1,0 +1,119 @@
+#############################################################################
+####              install all necessary dependencies                     ####
+#############################################################################
+
+1. Create a python virtual enviroment, run (in terminal):
+$ mkdir /path/to/your/venv
+$ python -m venv /path/to/your/venv
+
+In the following, I will name this virtual env as "torch-env", then the above commands become:
+$ mkdir torch-env
+$ python -m venv torch-env
+
+
+2. Activate the created v-env (named as "torch-env")
+$ source torch-env/bin/activate
+
+
+3. Install common numeric computation libraries:
+$ pip install numpy
+$ pip install scipy
+$ pip install scikit-learn
+
+
+4. Install the pytorch library:
+
+4.1 query the CUDA version using (we don't recommend installing torch only on CPU):
+$ nvidia-smi
+
+4.2 Go to this link: "https://pytorch.org/get-started/previous-versions/"
+search for compatible pytorch versions with your CUDA version
+e.g. we have CUDA 11.4 on our machine, then I can choose torch 1.12.1,
+which is compatible with CUDA 11.3 but well-suited to CUDA 11.4.
+
+4.3 As you have found the specific torch version (e.g. 1.12.1) and CUDA version (e.g. 11.3),
+locate the installation command for this combination on the aforementioned page:
+$ pip install torch==1.12.1+cu113 torchvision==0.13.1+cu113 torchaudio==0.12.1 --extra-index-url https://download.pytorch.org/whl/cu113
+
+
+5. Install specific dependencies
+$ pip install git+https://github.com/fwilliams/fml
+$ pip install point-cloud-utils
+$ pip install pymanopt autograd
+$ pip install POT
+$ pip install gmpy2
+
+
+#############################################################################
+####                  visualize pretrained results                       ####
+#############################################################################
+
+
+6. Go to the directory you save this code
+
+
+7. Select a case ID you are interested in between (0, 1100, 1110, 2100, 2110)
+They correspond the DDD initial configuration in our paper as follows:
+0    --       Config-0
+1100 -- [100] Config-1
+1110 -- [110] Config-1
+2100 -- [100] Config-2
+2110 -- [110] Config-2
+
+
+8. Go to the directory for the results of the specific configuration (eg. case 0):
+"saved_results/yield-surface-moredense-0/"
+
+
+9. Load "recon_point_cloud.vtk" to the Paraview software to visualize the entire manifold as a collection of scatter points
+
+
+10. Under the sub-directory "datafiles", there are a number of "patch_*.vtk" files, corresponding to individual reconstructed patches in the manifold. You can also load them to Paraview.
+
+
+
+#############################################################################
+####                          retrain the model                          ####
+#############################################################################
+
+
+11. Go to the directory you save this code
+
+
+12. Go to the directory for training source codes (under "training")
+
+
+13. Select a cased ID and search for the input file under "input_dense"
+e.g. for case 0, it is "train-moredense-data-config-0.npy"
+
+
+14. Name your output prefix as "yld-surf-d-case_id"
+e.g. for case 0, you will set it as "yld-surf-d-0"
+
+
+15. Execute the following command template to train a model:
+"python reconstruct_surface.py $INP-FNAME 0.13 1.0 5 -d cuda:0 -nl $LOCAL-EPOCHS -ng $GLOBAL-EPOCHS -nup $UPSAMPLE-DENSITY -o $OUT-PREFIX"
+e.g. select case 0; use 125 for both local and global training epochs; use 30 for upsampling density, the command is filled as follows:
+$ python reconstruct_surface.py input_dense/train-moredense-data-config-0.npy 0.13 1.0 5 -d cuda:0 -nl 125 -ng 125 -nup 30 -o yld-surf-d-0
+
+You will see the code output 4 files:
+"OUT-PREFIX.pt"
+"OUT-PREFIX_indices.txt"
+"OUT-PREFIX_vertices.txt"
+"OUT-PREFIX_normals.txt"
+
+
+16. Create a new directory for saving program outputs (e.g. "results"). Please organize your outputs for different configuration under separate sub-directories, and follow the naming convetion as those in "saved_results". Then move "make_series_reg.py" to "results/". Execute the following commands for post-processing to get the vtk files for visualization:
+$ python make_series_reg.py 0
+$ python make_series_reg.py 1100
+$ python make_series_reg.py 1110
+$ python make_series_reg.py 2100
+$ python make_series_reg.py 2110
+
+
+17. If you would like to evaluate the yield stress along certain stress-driven loading directions, run "get_points_by_dir.py", which takes in stress directions listed in "sig_direction.txt" and output yielding points along those directions for the five configuration cases. Make sure you have the pytorch model file ("*.pt") for all five configurations saved in the same directory.
+
+
+* Attention: The libraries for building this code like "point-cloud-utils" have been updated before the code maintainence for publishing, and some modules have also been replaced and could show slight different behaviors in terms of output. The retrained manifold may have the same shape but differ in the number of patches.
+
+
